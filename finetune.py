@@ -17,7 +17,7 @@ import copy
 import torch.optim as optim
 from torch.optim import lr_scheduler
 
-path = os.path.join(os.path.curdir,"Data/train")
+path = os.path.join(os.path.curdir,"Data/train")  #this path is used to claculate the mean and std of dataset
 
 # Calculating Mean and Std Diviation for the images. Needed for Data Normalization.
 normalizer = Normalize(path=path, batch_size=5)
@@ -51,7 +51,7 @@ data_transforms = {
     ]),
 }
 
-data_dir = os.path.join(os.path.curdir,"Data")
+data_dir = os.path.join(os.path.curdir,"Data")      #dataset path, ImageFolder will find train and val inside Data dir
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'val']}
@@ -67,6 +67,7 @@ out = torchvision.utils.make_grid(inputs)
 #imshow(out, title=[class_names[x] for x in classes])
 
 def train_model(model, criterion, optimizer, scheduler, num_epochs):
+    """method for training the model"""
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -98,6 +99,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                 #print(labels)
                 inputs = inputs.to(device)
                 labels = labels.to(device)
+                ## As we modified the final layer according to our need and we are using binary crossentropy loss
+                ## which does'nt have softmax builtin hence an activation function is needed for it (softmax or sigmoid)
                 #soft_max = nn.Softmax(dim=0)
                 sigmoid = nn.Sigmoid()
 
@@ -108,7 +111,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                     #print(outputs)
                     outputs = sigmoid(outputs)
                     #print(outputs)
-                    _, preds = torch.max(outputs, 1)
+                    _, preds = torch.max(outputs, 1)        #preds stores model predictions
                     #print(preds)
 
                     loss = criterion(outputs, labels)
@@ -163,18 +166,20 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
 
 model = torchvision.models.vgg16(pretrained=True)
 #print(model)
-
+### The features layers are freezed, because we need to finetune only the classifier layers including the modified layer
 for name, param in model.named_parameters():
      if param.requires_grad and 'features' in name:
         param.requires_grad = False
-
+# last layer is modified to fit the one class problem
 model.classifier[6]= nn.Linear(4096, 1)
 #print(model)
+
+#printing the layers with require_grad for confirmation
 for name, param in model.named_parameters():
     if param.requires_grad:
         print(name)
     else:
-        print("requires_grad the layer is set to false")
+        print("requires_grad on this layer is set to false")
 #print(model.state_dict())
 model_conv = model.to(device)
 
