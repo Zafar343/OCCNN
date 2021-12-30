@@ -11,13 +11,13 @@ from sklearn import svm
 from sklearn import metrics
 import tqdm
 from normalize import Normalize
-import torchextractor as tx
+#import torchextractor as tx
 import time
 import copy
 import torch.optim as optim
 from torch.optim import lr_scheduler
 
-path = os.path.join(os.path.curdir,"Data/train")  #this path is used to claculate the mean and std of dataset
+path = os.path.join(os.path.curdir,"OCCNN/Data/train")  #this path is used to claculate the mean and std of dataset
 
 # Calculating Mean and Std Diviation for the images. Needed for Data Normalization.
 normalizer = Normalize(path=path, batch_size=5)
@@ -51,7 +51,7 @@ data_transforms = {
     ]),
 }
 
-data_dir = os.path.join(os.path.curdir,"Data")      #dataset path, ImageFolder will find train and val inside Data dir
+data_dir = os.path.join(os.path.curdir,"OCCNN/Data")      #dataset path, ImageFolder will find train and val inside Data dir
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'val']}
@@ -127,8 +127,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                 #print(torch.sum(preds == labels.data))
                 running_loss += loss.item() * inputs.size(0)
                 #print(running_loss)
-                running_corrects += torch.sum(preds == labels.data)
-                print(dataset_sizes[phase])
+                running_corrects += torch.sum(torch.tensor(preds,dtype=torch.float32) == labels.data[:,0].cpu())
+                #print(dataset_sizes[phase])
 
             if phase == 'train':
                 scheduler.step()
@@ -187,7 +187,7 @@ criterion = nn.BCELoss()
 
 # Observe that only parameters of final layer are being optimized as
 # opposed to before.
-optimizer = optim.SGD(model_conv.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.SGD(model_conv.parameters(), lr=0.0001, momentum=0.9)
 
 # Decay LR by a factor of 0.1 every 7 epochs
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=8.0, gamma=0.1)
@@ -195,4 +195,4 @@ exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=8.0, gamma=0.1)
 model_conv = train_model(model_conv, criterion, optimizer,
                          exp_lr_scheduler, num_epochs=5)
 
-
+print('pass')
