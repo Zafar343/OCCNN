@@ -90,26 +90,34 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
 
             # Iterate over data.
             #itr = 0
-            for inputs, labels in dataloaders[phase]:
+            #for inputs, labels in dataloaders[phase]:
+            for inputs, _ in dataloaders[phase]:
                 #itr += 1
                 #print(itr)
                 #print(torch.unsqueeze(labels, 1))
-                labels = labels.type(torch.float32)
-                labels = torch.unsqueeze(labels,1)
+                # labels = labels.type(torch.float32)
+                # labels = torch.unsqueeze(labels,1)
                 #print(labels)
+                
+                tensor1 = torch.ones(1, inputs.size()[0])
+                tensor2 = torch.zeros(1, inputs.size()[0])
+                labels = torch.cat(tensors=[tensor1, tensor2])
+
+                labels = torch.transpose(labels, 0, 1)
+
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 ## As we modified the final layer according to our need and we are using binary crossentropy loss
                 ## which does'nt have softmax builtin hence an activation function is needed for it (softmax or sigmoid)
-                #soft_max = nn.Softmax(dim=0)
-                sigmoid = nn.Sigmoid()
+                soft_max = nn.Softmax(dim=0)
+                #sigmoid = nn.Sigmoid()
 
                 # forward
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
                     #print(outputs)
-                    outputs = sigmoid(outputs)
+                    outputs = soft_max(outputs)
                     #print(outputs)
                     _, preds = torch.max(outputs, 1)        #preds stores model predictions
                     #print(preds)
@@ -171,7 +179,7 @@ for name, param in model.named_parameters():
      if param.requires_grad and 'features' in name:
         param.requires_grad = False
 # last layer is modified to fit the one class problem
-model.classifier[6]= nn.Linear(4096, 1)
+model.classifier[6]= nn.Linear(4096, 2)
 #print(model)
 
 #printing the layers with require_grad for confirmation
